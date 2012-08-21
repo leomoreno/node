@@ -172,9 +172,67 @@ var joinTests =
      [[' ', '.'], ' '],
      [[' ', '/'], ' /'],
      [[' ', ''], ' '],
+     [['/', 'foo'], '/foo'],
+     [['/', '/foo'], '/foo'],
+     [['/', '//foo'], '/foo'],
+     [['/', '', '/foo'], '/foo'],
+     [['', '/', 'foo'], '/foo'],
+     [['', '/', '/foo'], '/foo'],
      // filtration of non-strings.
      [['x', true, 7, 'y', null, {}], 'x/y']
     ];
+
+// Windows-specific join tests
+if (isWindows) {
+  joinTests = joinTests.concat(
+    [// UNC path expected
+     [['//foo/bar'], '//foo/bar/'],
+     [['\\/foo/bar'], '//foo/bar/'],
+     [['\\\\foo/bar'], '//foo/bar/'],
+     // UNC path expected - server and share separate
+     [['//foo', 'bar'], '//foo/bar/'],
+     [['//foo/', 'bar'], '//foo/bar/'],
+     [['//foo', '/bar'], '//foo/bar/'],
+     // UNC path expected - questionable
+     [['//foo', '', 'bar'], '//foo/bar/'],
+     [['//foo/', '', 'bar'], '//foo/bar/'],
+     [['//foo/', '', '/bar'], '//foo/bar/'],
+     // UNC path expected - even more questionable
+     [['', '//foo', 'bar'], '//foo/bar/'],
+     [['', '//foo/', 'bar'], '//foo/bar/'],
+     [['', '//foo/', '/bar'], '//foo/bar/'],
+     // No UNC path expected (no double slash in first component)
+     [['\\', 'foo/bar'], '/foo/bar'],
+     [['\\', '/foo/bar'], '/foo/bar'],
+     [['', '/', '/foo/bar'], '/foo/bar'],
+     // No UNC path expected (no non-slashes in first component - questionable)
+     [['//', 'foo/bar'], '/foo/bar'],
+     [['//', '/foo/bar'], '/foo/bar'],
+     [['\\\\', '/', '/foo/bar'], '/foo/bar'],
+     [['//'], '/'],
+     // No UNC path expected (share name missing - questionable).
+     [['//foo'], '/foo'],
+     [['//foo/'], '/foo/'],
+     [['//foo', '/'], '/foo/'],
+     [['//foo', '', '/'], '/foo/'],
+     // No UNC path expected (too many leading slashes - questionable)
+     [['///foo/bar'], '/foo/bar'],
+     [['////foo', 'bar'], '/foo/bar'],
+     [['\\\\\\/foo/bar'], '/foo/bar'],
+     // Drive-relative vs drive-absolute paths. This merely describes the
+     // status quo, rather than being obviously right
+     [['c:'], 'c:.'],
+     [['c:.'], 'c:.'],
+     [['c:', ''], 'c:.'],
+     [['', 'c:'], 'c:.'],
+     [['c:.', '/'], 'c:./'],
+     [['c:.', 'file'], 'c:file'],
+     [['c:', '/'], 'c:/'],
+     [['c:', 'file'], 'c:/file']
+    ]);
+}
+
+// Run the join tests.
 joinTests.forEach(function(test) {
   var actual = path.join.apply(path, test[0]);
   var expected = isWindows ? test[1].replace(/\//g, '\\') : test[1];
